@@ -3,8 +3,9 @@
 
 class Environment {
 
-  constructor(records = {}) {
+  constructor(records = {}, parentEnv = null) {
     this.records = records;
+    this.parentEnv = parentEnv;
   }
 
   // Creer une variable avec le nom et la valeur donnes 
