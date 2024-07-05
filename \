@@ -3,6 +3,7 @@
 
 const { lookup } = require("dns");
 
+
 class Environment {
 
   constructor(records = {}, parentEnv = null) {
@@ -20,10 +21,7 @@ class Environment {
   lookup(varName) {
     return this.resolve(varName).records[varName];
   }
-   // Modifier la valeur d'une variable
-  assign(varName, varValue) {
-    this.resolve(varName).records[varName] = varValue;
-  }
+
   //  Revenir a l'environnment specifique dans lequel une variable est definie ou lancer une
   //  exception si une variable n'est pas definie
   resolve(varName) {

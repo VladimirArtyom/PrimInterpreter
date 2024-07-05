@@ -27,7 +27,7 @@ class Prim {
   }
 
   EvaluateBlock(block, env) {
-    
+
     let result;
     const [_tag, ...expressions] = block;
 
@@ -40,7 +40,7 @@ class Prim {
   }
 
   Evaluate(expression, env) {
-  
+
     // Self evaluating expression
     if(this.IsNumber(expression)) {
       return expression;
@@ -49,7 +49,6 @@ class Prim {
     if(this.IsString(expression)) {
       return expression.slice(1, -1); //'Return from '"Hello"' to "Hello"'
     }
-
 
     // Mathematical expression
     if(expression[0] === '+') {
@@ -72,12 +71,44 @@ class Prim {
       return this.Evaluate(expression[1], env) % this.Evaluate(expression[2], env);
     }
 
+    // Comparison expression
+    if(expression[0] === '<') {
+      return this.Evaluate(expression[1], env) < this.Evaluate(expression[2], env);
+    }
+
+    if(expression[0] === '>') {
+      return this.Evaluate(expression[1], env) > this.Evaluate(expression[2], env);
+    }
+
+    if(expression[0] === '>=') {
+      return this.Evaluate(expression[1], env) >= this.Evaluate(expression[2], env);
+    }
+
+    if(expression[0] === '<=') {
+      return this.Evaluate(expression[1], env) <= this.Evaluate(expression[2], env);
+    }
+
+    if(expression[0] === 'si') {
+      const [_tag, condition, trueExp, falseExp] = expression;
+      if (this.Evaluate(condition, env)) {
+        return this.Evaluate(trueExp, env);
+      } 
+      return this.Evaluate(falseExp, env);
+
+    }
+
     // Variable declaration
     if(expression[0] === 'var') {
       let [_, name, value] = expression;
       return env.define(name, this.Evaluate(value, env)); // We need to Evaluate the value for the correct type 
     }
-    
+
+    // Variable assignment
+    if(expression[0] === 'attribuer') {
+      let [_, name, value] = expression;
+      return env.assign(name, this.Evaluate(value, env));
+    }
+
     // Variable lookoup
     if(this.IsVariableName(expression)) {
       return env.lookup(expression);
@@ -88,12 +119,11 @@ class Prim {
       const localEnv = new Environment({}, env);
       return this.EvaluateBlock(expression, localEnv);
     }
-    throw new Error("Not implemented");
+    //throw new Error("Not implemented");
   }
 
 }
 
-// Testing
 const primLang = new Prim();
 const globalEnv = new Environment({
   null: null,
@@ -101,10 +131,8 @@ const globalEnv = new Environment({
   false: false,
 });
 
-// Self evaluating expression
 assert.strictEqual(primLang.Evaluate(4, globalEnv), 4);
 assert.strictEqual(primLang.Evaluate('"Hello"', globalEnv), "Hello");
-
 
 // Mathematical expression 
 assert.strictEqual(primLang.Evaluate(['+', 1, 3], globalEnv), 4);
@@ -163,5 +191,54 @@ assert.strictEqual( primLang.Evaluate(
     ],
     'x'
   ]), 10);
+
+
+// Cette assertion teste si une portee locale peut utilliser la 
+// variable globale.
+assert.strictEqual( primLang.Evaluate(
+  ['demarrer', 
+    ['var', 'value', 10],
+    ['var', 'result', ['demarrer',
+      ['var', 'x' , ['+', 'value', + 10]],
+      'x'
+    ],
+    ],
+    'result',
+  ], globalEnv), 20);
+
+// Cette assertion teste si une variable est affectee avec une 
+// nouvelle valeur
+assert.strictEqual( primLang.Evaluate(
+  ['demarrer',
+    ['var', 'variable', 10],
+    ['demarrer',
+      ['attribuer', 'variable', 20],
+    ],
+    'variable',
+  ], globalEnv), 20);
+
+// Cette assertion teste si l'instruction conditionnelle (if) est reussie ou non ( TRUE Case)
+assert.strictEqual(primLang.Evaluate(
+  ['demarrer',
+    ['var', 'x', 10],
+    ['var', 'y', 40],
+    ['si', ['<', 'x', 'y'],
+      ['attribuer', 'x', ['+', 'x', 'y']],
+      ['attribuer', 'y', 20],
+    ],
+    'x',
+  ], globalEnv), 50)
+
+// Cette assertion teste si l'instruction conditionnelle (if) est reussie ou non ( False Case)
+assert.strictEqual(primLang.Evaluate(
+  ['demarrer',
+    ['var', 'x', 10],
+    ['var', 'y', 40],
+    ['si', ['>', 'x', 'y'],
+      ['attribuer', 'x', ['+', 'x', 'y']],
+      ['attribuer', 'y', 20],
+    ],
+    'y',
+  ], globalEnv), 20)
 console.log("Toutes les assertions les valid"); // All assertions are valid
 
